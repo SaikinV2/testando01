@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Mapa de Tiles – Downloads Interativos</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
+  <style>
+    body { margin: 0; font-family: sans-serif; }
+    #map { width: 100%; height: 60vh; }
+    #links {
+      padding: 1rem;
+      background: #f9f9f9;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    #links h2 { margin-top: 0; }
+    #links ul { margin: 0; padding-left: 1.2rem; }
+  </style>
+</head>
+<body>
+
+  <h1 style="text-align: center; margin-top: 1rem;">
+    Dados de Tiles – Altura de Dossel da Amazônia
+  </h1>
+
+  <div id="map"></div>
+  <div id="links">
+    <h2>Clique em um tile no mapa →</h2>
+    <p>Links aparecerão aqui ao clicar.</p>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map').setView([-3.5, -62], 4);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: 'Map data © OpenStreetMap contributors'
+    }).addTo(map);
+
+    const tileGrid = [];
+
+    const z = 5; 
+    const bounds = map.getBounds();
+
+    const topLeft = map.project(bounds.getNorthWest(), z);
+    const bottomRight = map.project(bounds.getSouthEast(), z);
+
+    const tileSize = 256;
+    const xMin = Math.floor(topLeft.x / tileSize);
+    const xMax = Math.floor(bottomRight.x / tileSize);
+    const yMin = Math.floor(topLeft.y / tileSize);
+    const yMax = Math.floor(bottomRight.y / tileSize);
+
+    for (let x = xMin; x <= xMax; x++) {
+      for (let y = yMin; y <= yMax; y++) {
+        const tl = map.unproject([x * tileSize, y * tileSize], z);
+        const br = map.unproject([(x + 1) * tileSize, (y + 1) * tileSize], z);
+        const rect = L.rectangle([tl, br], { color: '#ff7800', weight: 1, fillOpacity: 0 }).addTo(map);
+        rect.tileCoords = { x, y, z };
+        rect.on('click', handleTileClick);
+        tileGrid.push(rect);
+      }
+    }
+
+    function handleTileClick(e) {
+      const { x, y, z } = e.target.tileCoords;
+      const base = 'https://storage.googleapis.com/earthenginepartners-hansen/GFC-2023-v1.11/tileDir/';
+      const file1 = `${base}${z}/${x}/${y}_treecover2000.tif`;
+      const file2 = `${base}${z}/${x}/${y}_lossyear.tif`;
+      document.getElementById('links').innerHTML = `
+        <h2>Tile Z${z} X${x} Y${y}</h2>
+        <ul>
+          <li><a href="${file1}" target="_blank">treecover2000.tif</a></li>
+          <li><a href="${file2}" target="_blank">lossyear.tif</a></li>
+        </ul>`;
+    }
+  </script>
+</body>
+</html>
